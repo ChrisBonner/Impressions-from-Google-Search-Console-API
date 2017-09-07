@@ -86,16 +86,19 @@ def main(argv):
 
   # set web_response to return from function execute_request, passing needed variables.
   webResponse = execute_request(service, flags.propertyUri, webRequest)
+	
   # run funciton print_web_response and pass the variables to be used.
   PrintWebTable(webResponse, site)
 
   # set web_response to return from function execute_request, passing needed variables.
   imageResponse = execute_request(service, flags.propertyUri, imageRequest)
+	
   # run funciton print_image_response and pass the variables to be used.
   PrintImageTable(imageResponse, site)
 
   # set web_response to return from function execute_request, passing needed variables.
   videoResponse = execute_request(service, flags.propertyUri, videoRequest)
+	
   # run funciton print_videoResponse and pass the variables to be used.
   PrintVideoTable(videoResponse, site)
 
@@ -125,6 +128,7 @@ def PrintWebTable(webResponse, site):
       keys = u','.join(row['keys']).encode('utf-8')
       writer.writerow((keys, row['clicks'], row['impressions'], row['ctr'], row['position']))
     f.close
+
 # function for printing image impressions to csv
 def PrintImageTable(imageResponse, site):
   rows = imageResponse['rows']
@@ -137,6 +141,7 @@ def PrintImageTable(imageResponse, site):
       keys = u','.join(row['keys']).encode('utf-8')
       writer.writerow((keys, row['clicks'], row['impressions'], row['ctr'], row['position']))
     f.close
+
 # function for printing video impressions to csv
 def PrintVideoTable(videoResponse, site):
   rows = videoResponse['rows']
