@@ -11,7 +11,6 @@ from googleapiclient import sample_tools
 import os
 import errno
 import logging
-import random
 
 #Logging
 logging.basicConfig( filename='error.log',
