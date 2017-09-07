@@ -1,0 +1,159 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+#imports
+from tabulate import tabulate
+import csv
+from datetime import date, datetime, timedelta
+import argparse
+import sys
+from googleapiclient import sample_tools
+import os
+import errno
+import logging
+import random
+
+#Logging
+logging.basicConfig( filename='error.log',
+                     filemode='a',
+                     level=logging.DEBUG,
+                     format= '%(asctime)s - %(levelname)s - %(message)s',
+                   )
+
+# Declare command-line flags.
+argparser = argparse.ArgumentParser(add_help=False)
+argparser.add_argument('propertyUri', type=str,
+                       help=('Site or app URI to query data for (including '
+                             'trailing slash).'))
+argparser.add_argument('firstDate', type=str,
+                       help=('Start Date of date range for Impression Data '
+                       		 '(YYYY-MM-DD format)'))
+argparser.add_argument('secondDate', type=str,
+                       help=('End Date of date range for Impression Data '
+                       		 '(YYYY-MM-DD format)'))
+
+
+#define the main funciton
+def main(argv):
+  service, flags = sample_tools.init(
+      argv, 'webmasters', 'v3', __doc__, __file__, parents=[argparser],
+      scope='https://www.googleapis.com/auth/webmasters.readonly')
+
+  #set date range from flags
+  startDate = flags.firstDate
+  endDate = flags.secondDate
+
+  # Turn dates into string format
+  startDate = str(startDate)
+  endDate = str(endDate)
+	
+  #set the web request query
+  webRequest = {
+    'startDate': startDate,
+    'endDate': endDate,
+    'dimensions': ['date'],
+  }
+  
+  #set the image request query
+  imageRequest = {
+  	'startDate': startDate,
+  	'endDate': endDate,
+  	'dimensions': ['date'],
+  	'searchType': 'image',
+  }
+  
+  #set the video request query
+  videoRequest = {
+  	'startDate': startDate,
+  	'endDate': endDate,
+  	'dimensions': ['date'],
+  	'searchType': 'video',
+  }
+
+  # Get current working directory
+  cwd = os.getcwd()
+  
+  # Set site for directory usage and replace invalid char with valid a dash - and remove trailing slash
+  site = flags.propertyUri
+  site = site.replace("://","-")
+  site = site.replace(".", "-")
+  site = site.replace("/","")
+  
+  # Set final path for creation of new directory named after URL to store CSV of impression data
+  site = cwd + '\\' + site + '\\'
+  
+  # check to make sure the file path exists. If it does not, create it.
+  ensure_dir(site)
+
+  # set web_response to return from function execute_request, passing needed variables.
+  webResponse = execute_request(service, flags.propertyUri, webRequest)
+  # run funciton print_web_response and pass the variables to be used.
+  PrintWebTable(webResponse, site)
+
+  # set web_response to return from function execute_request, passing needed variables.
+  imageResponse = execute_request(service, flags.propertyUri, imageRequest)
+  # run funciton print_image_response and pass the variables to be used.
+  PrintImageTable(imageResponse, site)
+
+  # set web_response to return from function execute_request, passing needed variables.
+  videoResponse = execute_request(service, flags.propertyUri, videoRequest)
+  # run funciton print_videoResponse and pass the variables to be used.
+  PrintVideoTable(videoResponse, site)
+
+# function to ensure the file path exists. takes variable site
+def ensure_dir(site):
+    # set variable directory as an os path with the passed variable site
+    directory = os.path.dirname(site)
+    # check to see if the path does not exists. 
+    if not os.path.exists(directory):
+        # file path does not exists, so create it!
+        os.makedirs(directory)
+
+# function execure request
+def execute_request(service, propertyUri, request):
+  return service.searchanalytics().query(
+      siteUrl=propertyUri, body=request).execute()
+
+# function for printing web impression to csv
+def PrintWebTable(webResponse, site):
+  rows = webResponse['rows']
+  row_format = '{:<20}' + '{:>20}' * 4
+  f = open(site + 'web-impressions.csv', 'a')
+  writer = csv.writer(f)
+  for row in rows:
+    keys = ''
+    if 'keys' in row:
+      keys = u','.join(row['keys']).encode('utf-8')
+      writer.writerow((keys, row['clicks'], row['impressions'], row['ctr'], row['position']))
+    f.close
+# function for printing image impressions to csv
+def PrintImageTable(imageResponse, site):
+  rows = imageResponse['rows']
+  row_format = '{:<20}' + '{:>20}' * 4
+  f = open(site + 'image-impressions.csv', 'a')
+  writer = csv.writer(f)
+  for row in rows:
+    keys = ''
+    if 'keys' in row:
+      keys = u','.join(row['keys']).encode('utf-8')
+      writer.writerow((keys, row['clicks'], row['impressions'], row['ctr'], row['position']))
+    f.close
+# function for printing video impressions to csv
+def PrintVideoTable(videoResponse, site):
+  rows = videoResponse['rows']
+  row_format = '{:<20}' + '{:>20}' * 4
+  f = open(site + 'video-impressions.csv', 'a')
+  writer = csv.writer(f)
+  for row in rows:
+    keys = ''
+    if 'keys' in row:
+      keys = u','.join(row['keys']).encode('utf-8')
+      writer.writerow((keys, row['clicks'], row['impressions'], row['ctr'], row['position']))
+    f.close
+
+# init with try catch for logging exceptions
+if __name__ == '__main__':
+  try:
+    main(sys.argv)
+  except Exception:
+    logging.exception("Fatal error in main loop")
